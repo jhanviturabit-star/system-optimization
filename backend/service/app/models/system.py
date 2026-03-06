@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, TIMESTAMP
 from sqlalchemy.sql import func
-from app.db.base import Base
+from ..db.base import Base
 
 class System(Base):
     __tablename__ = "systems"
