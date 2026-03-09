@@ -3,31 +3,32 @@
 import psutil
 
 def collect_metrics():
-    cpu_usage = psutil.cpu_percent(interval=1)
-
-    ram = psutil.virtual_memory()
-    ram_usage = ram.percent
-
-    disk = psutil.disk_usage()
-    disk_usage = disk.percent
-
-    #temperature (may not work in every systems)
     try:
-        temps = psutil.sensors_battery()
-        if temps:
-            temp = list(temps.values())[0][0].current
-        else:
+        cpu_usage = psutil.cpu_percent(interval=1)
+        ram = psutil.virtual_memory().percent
+        disk = psutil.disk_usage('C:/').percent
+
+        try:
+            temps = psutil.sensors_temperatures()
+            temp = list(temps.values())[0][0].current if temps else 0
+        except Exception:
             temp = 0
-    except:
-        temp = 0
 
-    #startup apps placeholder
-    startup_apps = 10
+        startup_apps = 10
 
-    return {
-        "cpu": cpu_usage,
-        "ram": ram_usage,
-        "disk": disk_usage,
-        "temp": temp,
-        "startup": startup_apps
-    }
+        return {
+            "cpu_usage": cpu_usage,
+            "ram_usage": ram,
+            "disk_usage": disk,
+            "temperature": temp,
+            "startup_time": startup_apps
+        }
+
+    except Exception:   
+        return {
+            "cpu_usage": 0,
+            "ram_usage": 0,
+            "disk_usage": 0,
+            "temperature": 0,
+            "startup_time": 0
+        }

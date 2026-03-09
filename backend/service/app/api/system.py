@@ -44,8 +44,8 @@ def report_metrics(metrics: SystemMetrics, db: Session = Depends(get_db)):
             "cpu": metrics.cpu_usage,
             "ram": metrics.ram_usage,
             "disk": metrics.disk_usage,
-            "temp": metrics.temp_size_mb,
-            "startup": metrics.startup_programs
+            "temp": metrics.temperature,
+            "startup": metrics.startup_time
         }
     )
 
