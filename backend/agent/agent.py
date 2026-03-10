@@ -4,15 +4,14 @@
 while True:
     metrics = collect_metrics()
 
-    send_metrics(metrics)
+    send_metrics(system_id, metrics)
 
-    tasks = fetch_tasks()
+    tasks = fetch_tasks(system_id)
 
     for task in tasks:
-        execute_task(task)
-        update_task_status(task)
+        run_task(task)
 
-    sleep(300)
+    time.sleep(30)
 """
 
 import time
@@ -24,9 +23,7 @@ from metrics_collector import collect_metrics
 from api_client import register_system, send_metrics, fetch_tasks, update_task_status
 from optimizer import execute_task
 
-
 SYSTEM_ID_FILE = "system_id.txt"
-
 
 def get_or_register_system():
 
@@ -83,6 +80,9 @@ def main():
 
                 success = execute_task(task)
 
+                print("TASK RECEIVED:", task)
+                print("TYPE OF PAYLOAD:", type(task.get("payload")))
+
                 if success:
                     update_task_status(task_id, "completed")
                     print(f"Task {task_id} completed")
@@ -96,7 +96,7 @@ def main():
             print("Agent error:", e)
 
         # wait before next cycle
-        time.sleep(10)
+        time.sleep(100)
 
 
 if __name__ == "__main__":

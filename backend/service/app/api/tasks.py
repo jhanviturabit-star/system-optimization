@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from service.app.db.session import get_db
 from sqlalchemy import text
 from pydantic import BaseModel
+import json
 
 class TaskStatusUpdate(BaseModel):
     task_id: int
@@ -24,11 +25,18 @@ def get_tasks(system_id: int, db: Session = Depends(get_db)):
     tasks = []
 
     for row in result:
-        tasks.append({
-            "task_id": row.id,
-            "action": row.action_type,
+        payload = row.payload_json
 
-        })
+    # convert JSON string to dict
+    if isinstance(payload, str):
+        payload = json.loads(payload)
+
+    tasks.append({
+        "task_id": row.id,
+        "action": row.action_type,
+        "payload": payload,
+        "created_at": str(row.created_at) if hasattr(row, "created_at") else None
+    })
         
     return {"tasks": tasks}
 
@@ -48,3 +56,20 @@ def update_task_status(data: TaskStatusUpdate, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Task status updated"}
+
+@router.post("/{task_id}/complete")
+def complete_task(task_id: int, db: Session = Depends(get_db)):
+
+    db.execute(
+        text(""" 
+        UPDATE optimization_queue
+        SET status = 'completed'
+        WHERE id = :task_id
+        """),
+        {"task_id": task_id}
+    )
+
+    # db.execute(query, {"task_id": task_id})
+    db.commit()
+
+    return {"message": "Task completed"}

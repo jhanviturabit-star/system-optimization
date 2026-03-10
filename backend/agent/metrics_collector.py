@@ -20,8 +20,8 @@ def collect_metrics():
             "cpu_usage": cpu_usage,
             "ram_usage": ram,
             "disk_usage": disk,
-            "temperature": temp,
-            "startup_time": startup_apps
+            "temp_size_mb": temp,
+            "startup_files": startup_apps
         }
 
     except Exception:   
@@ -29,6 +29,6 @@ def collect_metrics():
             "cpu_usage": 0,
             "ram_usage": 0,
             "disk_usage": 0,
-            "temperature": 0,
-            "startup_time": 0
+            "temp_size_mb": 0,
+            "startup_files": 0
         }

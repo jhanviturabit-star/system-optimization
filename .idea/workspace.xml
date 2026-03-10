@@ -4,17 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="18e37b08-4bfb-4401-b3e8-4ebf62e8f92c" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/System Optimization.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/agent/api_client.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/agent/api_client.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/agent/metrics_collector.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/agent/metrics_collector.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/agent/optimizer.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/agent/optimizer.py" afterDir="false" />
-    </list>
+    <list default="true" id="18e37b08-4bfb-4401-b3e8-4ebf62e8f92c" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

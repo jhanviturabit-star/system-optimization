@@ -3,12 +3,15 @@
 import os
 import shutil
 import subprocess
-
+# import json
 
 # -------------------------------
 # TEMP FILE CLEANUP
 # -------------------------------
-def clear_temp_files(path="C:/Windows/Temp"):
+#def clear_temp_files(path="C:/Windows/Temp"):
+def clear_temp_files(path=None):
+    if path is None:
+        path = os.environ.get("TEMP")
 
     try:
         for filename in os.listdir(path):
@@ -21,14 +24,17 @@ def clear_temp_files(path="C:/Windows/Temp"):
                 elif os.path.isdir(file_path):
                     shutil.rmtree(file_path)
 
-            except Exception:
+            except PermissionError:
                 pass
+
+            except Exception as e:
+                print(f"Error deleting {file_path}: {e}")
 
         return True
 
-    except Exception:
+    except Exception as e:
+        print(f"Error during temp file cleanup: {e}")
         return False
-
 
 # -------------------------------
 # DISK CLEANUP
@@ -88,9 +94,9 @@ def execute_task(task):
     action = task.get("action")
     payload = task.get("payload", {})
 
-    if action == "clear_temp_files":
+    if action == "clear_temp":
 
-        path = payload.get("path", "C:/Windows/Temp")
+        path = payload.get("path")
         return clear_temp_files(path)
 
     elif action == "disk_cleanup":

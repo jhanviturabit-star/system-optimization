@@ -15,7 +15,10 @@ def register_system(hostname, os):
 
     response = requests.post(url, json=data)
 
-    return response.json()
+    try:
+        return response.json()
+    except:
+        return response.text
 
 
 def send_metrics(system_id, metrics):
@@ -27,13 +30,16 @@ def send_metrics(system_id, metrics):
         "cpu_usage": metrics["cpu_usage"],
         "disk_usage": metrics["disk_usage"],
         "ram_usage": metrics["ram_usage"],
-        "temperature": metrics["temperature"],
-        "startup_time": metrics["startup_time"]
+        "temp_size_mb": metrics["temp_size_mb"],
+        "startup_files": metrics["startup_files"]
     }
 
     response = requests.post(url, json=data)
 
-    return response.json()
+    try:
+        return response.json()
+    except:
+        return response.text
 
 
 def fetch_tasks(system_id):
@@ -42,7 +48,10 @@ def fetch_tasks(system_id):
 
     response = requests.get(url)
 
-    return response.json()
+    try:
+        return response.json()
+    except:
+        return response.text
 
 
 def update_task_status(task_id, status):
@@ -56,4 +65,7 @@ def update_task_status(task_id, status):
 
     response = requests.post(url, json=data)
 
-    return response.json()
+    try:
+        return response.json()
+    except:
+        return response.text
