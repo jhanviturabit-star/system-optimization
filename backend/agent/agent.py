@@ -80,11 +80,8 @@ def main():
 
                 success = execute_task(task)
 
-                print("TASK RECEIVED:", task)
-                print("TYPE OF PAYLOAD:", type(task.get("payload")))
-
                 if success:
-                    update_task_status(task_id, "completed")
+                    update_task_status(task_id)
                     print(f"Task {task_id} completed")
 
                 else:

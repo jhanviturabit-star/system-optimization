@@ -54,16 +54,11 @@ def fetch_tasks(system_id):
         return response.text
 
 
-def update_task_status(task_id, status):
+def update_task_status(task_id):
 
-    url = f"{BASE_URL}/tasks/update_status"
+    url = f"{BASE_URL}/tasks/{task_id}/complete"
 
-    data = {
-        "task_id": task_id,
-        "status": status
-    }
-
-    response = requests.post(url, json=data)
+    response = requests.post(url)
 
     try:
         return response.json()
