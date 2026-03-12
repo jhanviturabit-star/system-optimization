@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['agent.py'],
+    ['agent\\main.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='agent',
+    name='main',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

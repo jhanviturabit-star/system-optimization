@@ -52,3 +52,25 @@ def report_metrics(metrics: SystemMetrics, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message" : "Metrics recorded successfully"}
+    
+
+@router.get("/system")
+def get_systems(db: Session = Depends(get_db)):
+    
+    query = text(""" 
+        SELECT id, hostname, os
+        FROM systems
+    """)
+
+    result = db.execute(query).fetchall()
+
+    systems = []
+
+    for row in result:
+        systems.append({
+            "id": row[0],
+            "system_name": row[1],
+            "os": row[2]
+        })
+
+        return {"systems": systems}

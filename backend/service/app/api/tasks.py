@@ -20,6 +20,8 @@ def get_tasks(system_id: int, db: Session = Depends(get_db)):
         AND status = 'pending'
     """)
 
+    payload = None
+
     result = db.execute(query, {"system_id": system_id}).fetchall()
 
     tasks = []
@@ -27,9 +29,8 @@ def get_tasks(system_id: int, db: Session = Depends(get_db)):
     for row in result:
         payload = row.payload_json
 
-    # convert JSON string to dict
-    if isinstance(payload, str):
-        payload = json.loads(payload)
+    if not tasks:
+        return {"tasks": []}
 
     tasks.append({
         "task_id": row.id,

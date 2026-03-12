@@ -18,10 +18,13 @@ import time
 import socket
 import platform
 import os
+import sys
 
 from metrics_collector import collect_metrics
 from api_client import register_system, send_metrics, fetch_tasks, update_task_status
 from optimizer import execute_task
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 SYSTEM_ID_FILE = "system_id.txt"
 
@@ -70,7 +73,12 @@ def main():
 
             # fetch optimization tasks
             tasks_response = fetch_tasks(system_id)
-            tasks = tasks_response.get("tasks", [])
+            
+            if isinstance(tasks_response, dict):
+                tasks = tasks_response.get("tasks", [])
+            else:
+                print("Invalid response for tasks:", tasks_response)
+                tasks = []
 
             for task in tasks:
 
@@ -79,13 +87,13 @@ def main():
                 print(f"Executing task {task_id}: {task['action']}")
 
                 success = execute_task(task)
+                print("Checking for tasks...")
 
                 if success:
                     update_task_status(task_id)
                     print(f"Task {task_id} completed")
 
                 else:
-                    update_task_status(task_id, "failed")
                     print(f"Task {task_id} failed")
 
         except Exception as e:
@@ -93,8 +101,12 @@ def main():
             print("Agent error:", e)
 
         # wait before next cycle
-        time.sleep(100)
+        time.sleep(60)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print("Error occurred:", e)
+        input("Press Enter to exit...")
