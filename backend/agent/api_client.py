@@ -64,3 +64,14 @@ def update_task_status(task_id):
         return response.json()
     except:
         return response.text
+    
+def send_process_report(system_id, processes):
+
+    url = f"{BASE_URL}/system/report-processes/{system_id}"
+    
+    response = requests.post(url, json=processes)
+
+    try:
+        return response.json()
+    except:
+        return response.text

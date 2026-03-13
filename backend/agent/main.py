@@ -21,8 +21,8 @@ import os
 import sys
 
 from metrics_collector import collect_metrics
-from api_client import register_system, send_metrics, fetch_tasks, update_task_status
-from optimizer import execute_task
+from api_client import register_system, send_metrics, fetch_tasks, update_task_status, send_process_report
+from optimizer import execute_task, fetch_top_processes
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -82,17 +82,21 @@ def main():
 
             for task in tasks:
 
-                task_id = task["task_id"]
+                if isinstance(task, dict):
+                    task_id = task.get("task_id")
+                    action = task.get("action") or task.get("action_type")
+                else:
+                    task_id = None
+                    action = task
 
-                print(f"Executing task {task_id}: {task['action']}")
+                print(f"Executing task {task_id}: {action}")
 
-                success = execute_task(task)
+                success = execute_task({"action" : action} if isinstance(task, str) else task, system_id)
                 print("Checking for tasks...")
 
                 if success:
                     update_task_status(task_id)
                     print(f"Task {task_id} completed")
-
                 else:
                     print(f"Task {task_id} failed")
 
@@ -101,7 +105,7 @@ def main():
             print("Agent error:", e)
 
         # wait before next cycle
-        time.sleep(60)
+        time.sleep(10)
 
 
 if __name__ == "__main__":

@@ -1,102 +1,119 @@
 import streamlit as st
 import pandas as pd
-from client_api import get_systems, get_metrics, create_task
+import requests
 
-st.set_page_config(page_title="System Optimizer", layout="wide")
+# 1. THE "CYBER-DARK" CSS (Exact match for the video's look)
+st.set_page_config(page_title="SystemOptimizer", layout="wide")
 
-st.title("⚙ System Optimizer Dashboard")
+st.markdown("""
+    <style>
+    .stApp { background-color: #0E1117; }
+    h1, h2, h3, p, label { color: #00FFA3 !important; font-family: 'Courier New', Courier, monospace; }
+    
+    /* The Top Stepper Bar */
+    .stepper-container {
+        display: flex; justify-content: space-between;
+        margin-bottom: 40px; padding: 10px;
+    }
+    .step { color: #555; font-weight: bold; border-bottom: 2px solid #555; width: 22%; text-align: center; }
+    .step-active { color: #00FFA3; border-bottom: 2px solid #00FFA3; }
 
-# ---------------- SYSTEM SELECTION ---------------- #
+    /* Metric Cards */
+    div[data-testid="stMetric"] {
+        background: rgba(0, 255, 163, 0.05);
+        border: 1px solid rgba(0, 255, 163, 0.3);
+        border-radius: 10px; padding: 15px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-systems = get_systems()["systems"]
+# 2. STATE INITIALIZATION
+if 'step' not in st.session_state:
+    st.session_state.step = 1
 
-system_options = {s["system_name"]: s["id"] for s in systems}
-
-selected_system = st.selectbox(
-    "Select System",
-    list(system_options.keys())
-)
-
-system_id = system_options[selected_system]
-
-# ---------------- START SCAN BUTTON ---------------- #
-
-if st.button("🔍 Start Scan"):
-    st.success("System scan started")
-
+# 3. TOP STEPPER UI (From the recording)
+steps = ["System Analysis", "User Decision", "Optimization", "Final Action"]
+cols = st.columns(4)
+for i, name in enumerate(steps):
+    is_active = " (Active)" if st.session_state.step == i + 1 else ""
+    cols[i].markdown(f"<div style='text-align:center; color:{'#00FFA3' if st.session_state.step >= i+1 else '#555'}'>● {name}</div>", unsafe_allow_html=True)
 st.divider()
 
-# ---------------- FETCH METRICS ---------------- #
+# 4. STEP LOGIC
+# --- STEP 1: SYSTEM ANALYSIS ---
+if st.session_state.step == 1:
+    st.title("System Analysis")
+    st.caption("Scan your system to identify performance bottlenecks")
+    
+    # Gauges Row
+    c1, c2, c3 = st.columns(3)
+    c1.metric("CPU Usage", "67%")
+    c2.metric("RAM Usage", "72%")
+    c3.metric("Disk Usage", "45%")
 
-metrics = get_metrics(system_id)
+    st.subheader("Running Processes")
+    # Table data from recording
+    proc_data = {
+        "PID": [1024, 2048, 512],
+        "Process": ["chrome.exe", "vscode.exe", "system32.exe"],
+        "CPU %": [45.2, 22.1, 5.3],
+        "Memory %": [38.7, 28.3, 12.1],
+        "Status": ["RUNNING", "RUNNING", "SYSTEM"]
+    }
+    st.dataframe(pd.DataFrame(proc_data), use_container_width=True, hide_index=True)
 
-if "metrics" in metrics and len(metrics["metrics"]) > 0:
+    if st.button("Next ➡️", key="next1"):
+        st.session_state.step = 2
+        st.rerun()
 
-    df = pd.DataFrame(metrics["metrics"])
+# --- STEP 2: USER DECISION ---
+elif st.session_state.step == 2:
+    st.title("User Decision")
+    st.write("Select resource-heavy processes to terminate")
+    
+    # Multiselect logic for the "Terminate Selected" button in the video
+    st.info("Currently viewing high-impact processes...")
+    st.checkbox("chrome.exe (45.2% CPU)")
+    st.checkbox("vscode.exe (22.1% CPU)")
+    
+    st.button("Terminate Selected (0)", disabled=True)
 
-    latest = df.iloc[0]
-
-    # ----------- METRIC CARDS ----------- #
-
-    col1, col2, col3 = st.columns(3)
-
+    col1, col2 = st.columns(2)
     with col1:
-        st.metric(
-            "CPU Usage",
-            f"{latest['cpu_usage']} %"
-        )
-
+        if st.button("⬅️ Previous"): st.session_state.step = 1; st.rerun()
     with col2:
-        st.metric(
-            "RAM Usage",
-            f"{latest['ram_usage']} %"
-        )
+        if st.button("Next ➡️"): st.session_state.step = 3; st.rerun()
 
-    with col3:
-        st.metric(
-            "Disk Usage",
-            f"{latest['disk_usage']} %"
-        )
+# --- STEP 3: OPTIMIZATION ---
+elif st.session_state.step == 3:
+    st.title("Optimization")
+    st.write("Toggle cleanup options to free up resources")
+    
+    st.toggle("Delete Temporary Files", value=True, help="-2.3 GB")
+    st.toggle("Clear Recycle Bin", value=True, help="-850 MB")
+    st.toggle("Disable Startup Apps", value=False, help="-12s boot")
 
-    st.divider()
+    if st.button("Run Optimization ✨"):
+        with st.spinner("Optimizing..."):
+            # Trigger your FastAPI clear_temp here
+            import time; time.sleep(2)
+        st.success("Optimization Complete!")
 
-    # ----------- CHARTS ----------- #
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("⬅️ Previous"): st.session_state.step = 2; st.rerun()
+    with col2:
+        if st.button("Next ➡️"): st.session_state.step = 4; st.rerun()
 
-    st.subheader("System Metrics History")
-
-    df["created_at"] = pd.to_datetime(df["created_at"])
-    df = df.sort_values("created_at")
-
-    chart_col1, chart_col2, chart_col3 = st.columns(3)
-
-    with chart_col1:
-        st.write("CPU Usage")
-        st.line_chart(df.set_index("created_at")["cpu_usage"])
-
-    with chart_col2:
-        st.write("RAM Usage")
-        st.line_chart(df.set_index("created_at")["ram_usage"])
-
-    with chart_col3:
-        st.write("Disk Usage")
-        st.line_chart(df.set_index("created_at")["disk_usage"])
-
-else:
-    st.warning("No metrics available yet.")
-
-# ---------------- OPTIMIZATION ACTIONS ---------------- #
-
-st.divider()
-st.subheader("Optimization Actions")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    if st.button("🧹 Clear Temp Files"):
-        create_task(system_id, "clear_temp")
-        st.success("Task created")
-
-with col2:
-    if st.button("🚀 Disable Startup Apps"):
-        create_task(system_id, "disable_startup")
-        st.success("Task created")
+# --- STEP 4: FINAL ACTION ---
+elif st.session_state.step == 4:
+    st.title("Final Action")
+    st.warning("Restart Recommended")
+    st.write("Performance is at 58%, which is below the 78% threshold.")
+    
+    if st.button("🔄 Restart System"):
+        st.write("Sending restart command to agent...")
+    
+    if st.button("⬅️ Back to Start"):
+        st.session_state.step = 1
+        st.rerun()

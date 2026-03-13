@@ -11,6 +11,17 @@ class TaskStatusUpdate(BaseModel):
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
+@router.post("/create")
+def create_task(system_id: int, action_type: str, db: Session = Depends(get_db)):
+    
+    db.execute(
+        text("CALL add_optimization_task(:system_id, :action_type)"),
+        {"system_id": system_id, "action_type": action_type}
+    )
+
+    db.commit()
+    return {"message": "Task created successfully"}
+
 @router.get("/{system_id}")
 def get_tasks(system_id: int, db: Session = Depends(get_db)):
     query = text(""" 
@@ -20,25 +31,20 @@ def get_tasks(system_id: int, db: Session = Depends(get_db)):
         AND status = 'pending'
     """)
 
-    payload = None
+    #payload = None
 
     result = db.execute(query, {"system_id": system_id}).fetchall()
 
     tasks = []
 
     for row in result:
-        payload = row.payload_json
-
-    if not tasks:
-        return {"tasks": []}
-
-    tasks.append({
-        "task_id": row.id,
-        "action": row.action_type,
-        "payload": payload,
-        "created_at": str(row.created_at) if hasattr(row, "created_at") else None
-    })
-        
+        tasks.append({
+            "task_id": row[0],
+            "action": row[1],
+            "payload": row[2]
+            #"created_at": str(row.created_at) if hasattr(row, "created_at") else None
+        })
+            
     return {"tasks": tasks}
 
 @router.post("/update-status")
@@ -60,7 +66,7 @@ def update_task_status(data: TaskStatusUpdate, db: Session = Depends(get_db)):
 
 @router.post("/{task_id}/complete")
 def complete_task(task_id: int, db: Session = Depends(get_db)):
-
+    
     db.execute(
         text(""" 
         UPDATE optimization_queue
