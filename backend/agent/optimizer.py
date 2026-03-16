@@ -163,6 +163,10 @@ def execute_task(task, system_id):
                 print(f"Kill failed: {e}")
         return False
 
-    print(f"⚠️ Unknown action: {action}")
+    elif action == "restart_system":
+        os.system("shutdown /r /t 0")
+
+        
+    print(f"Unknown action: {action}")
     return False
     
