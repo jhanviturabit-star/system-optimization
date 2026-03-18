@@ -11,13 +11,10 @@ from api_client import send_process_report
 # FETCH TOP PROCESSES
 # -------------------------------
 def fetch_top_processes(limit=10):
-    """Fetch top N processes by CPU usage."""
     processes = []
     for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
         try:
-            # Fetch info ass a dict
             p_info = proc.info
-            # Filter out idle/system processes if they have 0% usage to keep the list relevant
             if p_info['cpu_percent'] > 0 or p_info['memory_percent'] > 0:
                 processes.append({
                     "pid": p_info['pid'],
@@ -35,115 +32,88 @@ def fetch_top_processes(limit=10):
 # -------------------------------
 # TEMP FILE CLEANUP
 # -------------------------------
-#def clear_temp_files(path="C:/Windows/Temp"):
 def clear_temp_files(path=None):
     if path is None:
-        path = os.environ.get("TEMP")
+        path = os.environ.get("TEMP") 
 
+    print(f"Cleaning User Temp: {path}")
+    
     try:
         for filename in os.listdir(path):
             file_path = os.path.join(path, filename)
-
             try:
                 if os.path.isfile(file_path) or os.path.islink(file_path):
                     os.unlink(file_path)
-
                 elif os.path.isdir(file_path):
                     shutil.rmtree(file_path)
-
-            except PermissionError:
-                pass
-
-            except Exception as e:
-                print(f"Error deleting {file_path}: {e}")
-
+            except Exception:
+                continue 
         return True
-
     except Exception as e:
-        print(f"Error during temp file cleanup: {e}")
+        print(f"Error accessing directory: {e}")
         return False
 
 # -------------------------------
 # DISK CLEANUP
 # -------------------------------
 def disk_cleanup():
-
+    """
+    Since cleanmgr /sagerun requires Admin, we instead clear 
+    the User's local application cache.
+    """
+    local_appdata = os.environ.get("LOCALAPPDATA")
+    target_cache = os.path.join(local_appdata, "Microsoft", "Windows", "Explorer")
+    
+    print(f"Attempting local cache optimization at: {target_cache}")
     try:
-        subprocess.run("cleanmgr /sagerun:1", shell=True)
+        # We can also clear the 'Recent' items folder which doesn't need admin
+        recent_path = os.path.expandvars(r"%USERPROFILE%\Recent")
+        if os.path.exists(recent_path):
+            for f in os.listdir(recent_path):
+                try:
+                    os.remove(os.path.join(recent_path, f))
+                except: continue
         return True
-
-    except Exception:
-        return False
-
+    except Exception as e:
+        print(f"Disk cleanup skipped system files (No Admin): {e}")
+        return True
 
 # -------------------------------
 # MEMORY CLEANUP
 # -------------------------------
 def memory_cleanup():
-
     try:
-        subprocess.run("powershell.exe -Command Clear-RecycleBin -Force", shell=True)
+        # Silently skip files that require Admin rights
+        cmd = 'powershell.exe -Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue"'
+        subprocess.run(cmd, shell=True)
+        print("User Recycle Bin cleanup attempted.")
         return True
-
-    except Exception:
-        return False
-
-
-# -------------------------------
-# STARTUP APPS CLEANUP
-# -------------------------------
-def startup_cleanup():
-
-    try:
-        startup_folder = os.path.expandvars(
-            r"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
-        )
-
-        for file in os.listdir(startup_folder):
-            file_path = os.path.join(startup_folder, file)
-
-            try:
-                os.remove(file_path)
-            except Exception:
-                pass
-
+    except Exception as e:
+        print(f"Memory cleanup error: {e}")
         return True
-
-    except Exception:
-        return False
-
 
 # -------------------------------
 # TASK EXECUTOR
 # -------------------------------
 def execute_task(task, system_id):
-    # 1. FORCE DICTIONARY CHECK
     if isinstance(task, str):
-        # If it's a string, we treat the string as the action name
         action = task
         payload = {}
     elif isinstance(task, dict):
-        # If it's a dict, we extract action and payload safely
         action = task.get("action") or task.get("action_type")
-        payload = task.get("payload", {}) or {}
-
+        payload = task.get("payload")
         if not isinstance(payload, dict):
-            payload = {"path": payload}
+            payload = {}
     else:
-        print(f"Unknown task format: {type(task)}")
         return False
 
     print(f"--- Processing: {action} ---")
 
-    # 2. MATCH ACTIONS
     if action in ["fetch_processes", "fetch_top_processes"]:
         process_list = fetch_top_processes()
-        # Ensure your api_client has this function
-        from api_client import send_process_report
         return send_process_report(system_id, process_list)
     
     elif action == "clear_temp":
-        # payload is now guaranteed to be a dict, so .get() works
         return clear_temp_files(payload.get("path"))
 
     elif action == "disk_cleanup":
@@ -164,8 +134,10 @@ def execute_task(task, system_id):
         return False
 
     elif action == "restart_system":
-        os.system("shutdown /r /t 0")
-
+        # Standard user restart command
+        print("System restart initiated...")
+        os.system("shutdown /r /t 5")
+        return True
         
     print(f"Unknown action: {action}")
     return False

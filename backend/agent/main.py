@@ -81,24 +81,23 @@ def main():
                 tasks = []
 
             for task in tasks:
-
-                if isinstance(task, dict):
-                    task_id = task.get("task_id")
-                    action = task.get("action") or task.get("action_type")
-                else:
-                    task_id = None
-                    action = task
+                # Ensure we are working with a dict
+                task_dict = task if isinstance(task, dict) else {"action": str(task)}
+                
+                task_id = task_dict.get("task_id")
+                action = task_dict.get("action") or task_dict.get("action_type")
 
                 print(f"Executing task {task_id}: {action}")
 
-                success = execute_task({"action" : action} if isinstance(task, str) else task, system_id)
-                print("Checking for tasks...")
-
-                if success:
-                    update_task_status(task_id)
-                    print(f"Task {task_id} completed")
-                else:
-                    print(f"Task {task_id} failed")
+                try:
+                    success = execute_task(task_dict, system_id)
+                    
+                    # ONLY update status if the execution was actually successful
+                    if success and task_id:
+                        update_task_status(task_id)
+                        print(f"Task {task_id} marked as complete.")
+                except Exception as task_err:
+                    print(f"Critical error executing task {task_id}: {task_err}")
 
         except Exception as e:
 

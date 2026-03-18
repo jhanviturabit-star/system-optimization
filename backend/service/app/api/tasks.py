@@ -12,15 +12,21 @@ class TaskStatusUpdate(BaseModel):
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 @router.post("/create")
-def create_task(system_id: int, action_type: str, db: Session = Depends(get_db)):
-    
-    db.execute(
-        text("CALL add_optimization_task(:system_id, :action_type)"),
-        {"system_id": system_id, "action_type": action_type}
-    )
+def create_task(system_id: int, action_type: str, payload: str=None, db: Session = Depends(get_db)):
 
-    db.commit()
-    return {"message": "Task created successfully"}
+    payload_json = payload if payload else "{}"
+
+    try:
+        db.execute(
+            text("CALL add_optimization_task(:system_id, :action_type, :payload)"),
+            {"system_id": system_id, "action_type": action_type, "payload": payload_json}
+        )
+        db.commit()
+        return {"message": "Task created successfully"}
+    except Exception as e:
+        db.rollback()
+        print(f"Db error: {e}")
+        return {"message": f"Error creating task: {str(e)}"}, 500
 
 @router.get("/{system_id}")
 def get_tasks(system_id: int, db: Session = Depends(get_db)):

@@ -15,11 +15,14 @@ def report_processes(system_id: int, processes: list):
     Endpoint for the AGENT to push the live process list 
     after receiving a 'fetch_processes' task.
     """
+    global live_process_cache
+
     # Store the snapshot in the cache
     live_process_cache[system_id] = {
         "data": processes,
         "timestamp": str(datetime.now())
     }
+    print(f"Cache updated for system {system_id}")
     return {"status": "success", "message": f"Received {len(processes)} processes"}
 
 @router.get("/system/live-processes/{system_id}")

@@ -4,7 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="18e37b08-4bfb-4401-b3e8-4ebf62e8f92c" name="Changes" comment="" />
+    <list default="true" id="18e37b08-4bfb-4401-b3e8-4ebf62e8f92c" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/backend/agent/api_client.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/agent/api_client.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/agent/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/agent/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/agent/optimizer.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/agent/optimizer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/build/main/Analysis-00.toc" beforeDir="false" afterPath="$PROJECT_DIR$/backend/build/main/Analysis-00.toc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/build/main/EXE-00.toc" beforeDir="false" afterPath="$PROJECT_DIR$/backend/build/main/EXE-00.toc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/build/main/PKG-00.toc" beforeDir="false" afterPath="$PROJECT_DIR$/backend/build/main/PKG-00.toc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/build/main/PYZ-00.pyz" beforeDir="false" afterPath="$PROJECT_DIR$/backend/build/main/PYZ-00.pyz" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/build/main/base_library.zip" beforeDir="false" afterPath="$PROJECT_DIR$/backend/build/main/base_library.zip" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/build/main/main.pkg" beforeDir="false" afterPath="$PROJECT_DIR$/backend/build/main/main.pkg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/build/main/warn-main.txt" beforeDir="false" afterPath="$PROJECT_DIR$/backend/build/main/warn-main.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/dist/main.exe" beforeDir="false" afterPath="$PROJECT_DIR$/backend/dist/main.exe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/dist/system_id.txt" beforeDir="false" afterPath="$PROJECT_DIR$/backend/dist/system_id.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/service/app/api/processes.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/service/app/api/processes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/service/app/api/tasks.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/service/app/api/tasks.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -22,13 +38,13 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;EXE-file&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "frontend"
   }
-}</component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>

@@ -1,205 +1,201 @@
 import streamlit as st
 import requests
 import pandas as pd
-from datetime import datetime
 import time
+import json
+from streamlit_autorefresh import st_autorefresh
 
-# ===================== CONFIG =====================
-st.set_page_config(page_title="System Optimization Tool", page_icon="⚡", layout="wide")
+# --- CONFIG & THEME ---
+st.set_page_config(page_title="System Optimizer", layout="wide")
 
-API_BASE_URL = "http://127.0.0.1:8000"  # ← your FastAPI URL
+# Custom CSS for that grid-pattern dark theme and neon accents
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #0e1117;
+        background-image: radial-gradient(#1f2937 1px, transparent 1px);
+        background-size: 20px 20px;
+        color: #00ffcc;
+    }
+    .stButton>button {
+        border: 1px solid #00ffcc;
+        background-color: transparent;
+        color: #00ffcc;
+        border-radius: 8px;
+        transition: 0.3s;
+    }
+    .stButton>button:hover {
+        background-color: #00ffcc;
+        color: #0e1117;
+        box-shadow: 0 0 10px #00ffcc;
+    }
+    .step-box {
+        padding: 20px;
+        border: 1px solid #333;
+        border-radius: 10px;
+        background: rgba(17, 25, 40, 0.75);
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-# Simple system selector (in real app you might have login → list systems)
-if 'system_id' not in st.session_state:
-    st.session_state.system_id = None
-if 'current_step' not in st.session_state:
-    st.session_state.current_step = 1
-    st.session_state.metrics = None
-    st.session_state.processes = None
-    st.session_state.selected_processes = []
+API_BASE = "http://127.0.0.1:8000"
 
-# ===================== SIDEBAR =====================
+# Auto-refresh every 5 seconds to catch the background process updates
+st_autorefresh(interval=5000, key="datarefresh")
+
+# --- STATE MANAGEMENT ---
+if 'step' not in st.session_state: st.session_state.step = 1
+if 'selected_system' not in st.session_state: st.session_state.selected_system = None
+
+# --- SIDEBAR: SYSTEM CONNECTION ---
 with st.sidebar:
-    st.title("⚡ System Optimization Tool")
-    st.markdown("Internal multi-system utility")
+    st.markdown("### Connection")
+    try:
+        systems = requests.get(f"{API_BASE}/system").json().get("systems", [])
+        system_map = {s['system_name']: s['id'] for s in systems}
+        choice = st.selectbox("Select Target Workstation", options=list(system_map.keys()))
+        st.session_state.selected_system = system_map[choice]
+        st.success(f"Connected to {choice}")
+    except:
+        st.error("FastAPI Server Offline")
 
-    system_id_input = st.text_input("Enter System ID", value=st.session_state.system_id or "")
-    if st.button("Load / Refresh System"):
-        if system_id_input.strip():
-            st.session_state.system_id = system_id_input.strip()
-            st.success(f"Working with system: {st.session_state.system_id}")
-            st.rerun()
-        else:
-            st.warning("Enter a valid system_id")
+# --- STEPPER HEADER ---
+cols = st.columns(4)
+step_names = ["System Analysis", "User Decision", "Optimization", "Final Action"]
+for i, name in enumerate(step_names):
+    is_active = st.session_state.step == i + 1
+    color = "#00ffcc" if is_active else "#555"
+    cols[i].markdown(f"<p style='text-align:center; color:{color}; font-weight:bold;'>{'●' if is_active else '○'} {name}</p>", unsafe_allow_html=True)
+
+st.markdown("---")
+
+# --- STEP 1: SYSTEM ANALYSIS ---
+if st.session_state.step == 1:
+    st.title("1. Analysis")
+    
+    # 1. THE GAUGES (Matching Lovable UI)
+    m_resp = requests.get(f"{API_BASE}/system/metrics/{st.session_state.selected_system}").json()
+    if m_resp.get("metrics"):
+        m = m_resp["metrics"][0]
+        col1, col2, col3 = st.columns(3)
+        
+        # We use custom HTML/CSS to make these look like Gauges rather than plain text
+        for col, label, val in zip([col1, col2, col3], ["CPU", "RAM", "Disk"], [m['cpu_usage'], m['ram_usage'], m['disk_usage']]):
+            color = "#00ffcc" if val < 70 else "#ff4b4b"
+            col.markdown(f"""
+                <div style="border: 2px solid #333; border-radius: 15px; padding: 20px; text-align: center; background: #111;">
+                    <h3 style="color: white; margin-bottom: 0;">{label}</h3>
+                    <h1 style="color: {color}; margin-top: 10px;">{val}%</h1>
+                    <div style="background-color: #333; border-radius: 10px; height: 10px; width: 100%;">
+                        <div style="background-color: {color}; height: 10px; width: {val}%; border-radius: 10px;"></div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
 
     st.markdown("---")
-    try:
-        resp = requests.get(f"{API_BASE_URL}/system/status/{st.session_state.system_id}", timeout=5)
-        status = "🟢 Online" if resp.status_code == 200 else "🔴 Error"
-    except:
-        status = "🔴 Offline / Invalid ID"
-    st.metric("Selected System", status)
 
-    if st.button("Reset Flow", type="secondary"):
-        st.session_state.current_step = 1
-        st.session_state.metrics = None
-        st.session_state.processes = None
-        st.rerun()
+    # 2. THE BACKGROUND PROGRAMS (Real-time list)
+    st.subheader("Background Processes")
+    p_resp = requests.get(f"{API_BASE}/system/live-processes/{st.session_state.selected_system}").json()
+    procs = p_resp.get("processes", [])
 
-# ===================== MAIN =====================
-if not st.session_state.system_id:
-    st.title("Welcome to System Optimization Tool")
-    st.info("Enter a **system_id** in the sidebar to start.\n\n"
-            "(Agents register via POST /system/register and report data automatically)")
-    st.stop()
-
-st.title(f"Optimization Dashboard – System {st.session_state.system_id}")
-progress = st.progress((st.session_state.current_step - 1) / 3)
-steps = ["1. System Analysis", "2. Review & Decide", "3. Cleanup & Optimize", "4. Final Recommendation"]
-st.subheader(steps[st.session_state.current_step - 1])
-
-# Auto-refresh helper
-def refresh_data():
-    try:
-        m = requests.get(f"{API_BASE_URL}/system/metrics/{st.session_state.system_id}", timeout=6)
-        if m.status_code == 200:
-            st.session_state.metrics = m.json()
-
-        p = requests.get(f"{API_BASE_URL}/system/live-processes/{st.session_state.system_id}", timeout=6)
-        if p.status_code == 200:
-            st.session_state.processes = p.json()  # assume list of dicts: [{'name':.., 'cpu':.., 'mem':..}, ...]
-    except:
-        pass
-
-# ===================== STEP 1: ANALYSIS =====================
-if st.session_state.current_step == 1:
-    st.markdown("Waiting for Agent to report latest metrics & processes (auto-reported via API).")
-
-    col1, col2 = st.columns([1,4])
-    with col1:
-        if st.button("Refresh Data Now", type="primary"):
-            refresh_data()
-            st.rerun()
-
-    if st.session_state.metrics:
-        col1, col2, col3 = st.columns(3)
-        col1.metric("CPU", f"{st.session_state.metrics.get('cpu_percent', 'N/A')}%")
-        col2.metric("RAM", f"{st.session_state.metrics.get('memory_percent', 'N/A')}%")
-        col3.metric("Disk", f"{st.session_state.metrics.get('disk_percent', 'N/A')}%")
-
-    if st.session_state.processes:
-        st.subheader("Top Resource Consumers")
-        df = pd.DataFrame(st.session_state.processes)
-
-        st.write("DEBUG: Available columns in processes data:")
-        st.write(df.columns.tolist())
-
-        st.write("DEBUG: First 3 rows (raw):")
-        st.write(df.head(3))
-
-        st.dataframe(df, use_container_width=True)
-       # st.dataframe(df.sort_values("cpu", ascending=False).head(15), use_container_width=True)
-
-    if st.button("Proceed to Review →", type="primary", disabled=not st.session_state.processes):
-        st.session_state.current_step = 2
-        st.rerun()
-
-    st.caption("Agent should call POST /system/report and /system/report-processes/{system_id} periodically.")
-
-# ===================== STEP 2: USER DECISION =====================
-elif st.session_state.current_step == 2:
-    st.markdown("Select heavy / non-critical processes to terminate.")
-
-    if st.session_state.processes:
-        df = pd.DataFrame(st.session_state.processes)
-        options = df['name'].tolist()  # adjust key if your process dict uses 'pid_name' etc.
-
-        selected = st.multiselect(
-            "Select processes to kill",
-            options=options,
-            default=st.session_state.selected_processes,
-            format_func=lambda x: f"{x}  (CPU: {df[df['name']==x]['cpu'].values[0]:.1f}%)"
+    if procs:
+        df_procs = pd.DataFrame(procs)
+        # Using st.dataframe with custom styling for that 'Pro' feel
+        st.dataframe(
+            df_procs[['pid', 'name', 'cpu', 'memory', 'status']], 
+            use_container_width=True, 
+            hide_index=True
         )
-
-        if st.button("Queue Termination Task", type="primary"):
-            if selected:
-                # Create task – adjust payload to match your /tasks/create schema
-                payload = {
-                    "system_id": st.session_state.system_id,
-                    "action": "terminate_processes",
-                    "parameters": {"process_names": selected},
-                    "status": "pending"
-                }
-                try:
-                    r = requests.post(f"{API_BASE_URL}/tasks/create", json=payload)
-                    r.raise_for_status()
-                    task_id = r.json().get("task_id", "unknown")
-                    st.success(f"Task created! ID: {task_id} — Agent will execute soon.")
-                    st.session_state.current_step = 3
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Failed to create task: {e}")
-            else:
-                st.warning("Select at least one process.")
     else:
-        st.info("No process data yet. Go back and refresh.")
+        st.info("Scanning for background programs... ensure Agent is running.")
 
-# ===================== STEP 3: ADDITIONAL OPTIMIZATION =====================
-elif st.session_state.current_step == 3:
-    st.markdown("Additional one-click optimizations (queued as tasks).")
+    if st.button("Next →"): st.session_state.step = 2
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("🗑️ Clean Temp Files + Recycle Bin"):
-            payload = {"system_id": st.session_state.system_id, "action": "cleanup_temp", "status": "pending"}
-            try:
-                requests.post(f"{API_BASE_URL}/tasks/create", json=payload)
-                st.success("Cleanup task queued.")
-            except:
-                st.error("Failed.")
+# --- STEP 2: USER DECISION ---
+elif st.session_state.step == 2:
+    st.subheader("User Decision")
+    st.caption("Select resource-heavy processes to terminate")
+    
+    p_resp = requests.get(f"{API_BASE}/system/live-processes/{st.session_state.selected_system}").json()
+    processes = p_resp.get("processes", [])
+    
+    if processes:
+        df = pd.DataFrame(processes)
+        df.insert(0, "Select", False)
+        edited_df = st.data_editor(df, hide_index=True, use_container_width=True)
+        
+        to_kill = edited_df[edited_df["Select"] == True]
+        if st.button(f"Terminate Selected ({len(to_kill)})", type="primary"):
+            for pid in to_kill['pid']:
 
-    with col2:
-        if st.button("Disable Unnecessary Startup Items"):
-            payload = {"system_id": st.session_state.system_id, "action": "disable_startup", "status": "pending"}
-            try:
-                requests.post(f"{API_BASE_URL}/tasks/create", json=payload)
-                st.success("Startup disable task queued.")
-            except:
-                st.error("Failed.")
+                payload_data = json.dumps({"pid": pid})
 
-    with col3:
-        if st.button("Re-analyze (refresh data)"):
-            refresh_data()
+                requests.post(f"{API_BASE}/tasks/create", params={
+                    "system_id": st.session_state.selected_system, 
+                    "action_type": "kill_process",
+                    "payload": payload_data
+                })
+            st.success("Kill tasks sent!")
+            time.sleep(1)
             st.rerun()
+    else:
+        st.info("No scan data available. Go back and Start Scan.")
 
-    if st.button("Go to Final Step →", type="primary"):
-        st.session_state.current_step = 4
-        st.rerun()
+    c1, c2 = st.columns(2)
+    if c1.button("← Previous"): st.session_state.step = 1
+    if c2.button("Next →"): st.session_state.step = 3
 
-# ===================== STEP 4: FINAL ACTION =====================
-elif st.session_state.current_step == 4:
-    st.markdown("If performance is still poor after cleanup, recommend restart.")
+# --- STEP 3: OPTIMIZATION ---
+if st.session_state.step == 3:
+    st.subheader("Optimization")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    # Note: We must pass payload="{}" to satisfy the DB procedure
+    if col1.button("🧹 Clear Temp"):
+        requests.post(f"{API_BASE}/tasks/create", params={
+            "system_id": st.session_state.selected_system, 
+            "action_type": "clear_temp",
+            "payload": "{}"
+        })
+        st.success("Clear Temp task issued!")
 
-    high_usage = False
-    if st.session_state.metrics:
-        if st.session_state.metrics.get('cpu_percent', 0) > 70 or st.session_state.metrics.get('memory_percent', 0) > 80:
-            high_usage = True
-            st.warning("High resource usage detected — restart may help.")
+    if col2.button("⚙️ Disk Cleanup"):
+        requests.post(f"{API_BASE}/tasks/create", params={
+            "system_id": st.session_state.selected_system, 
+            "action_type": "disk_cleanup",
+            "payload": "{}"
+        })
+        st.success("Disk Cleanup task issued!")
 
-    restart = st.checkbox("Queue system restart", value=high_usage)
+    if col3.button("🗑️ Empty Bin"):
+        requests.post(f"{API_BASE}/tasks/create", params={
+            "system_id": st.session_state.selected_system, 
+            "action_type": "memory_cleanup",
+            "payload": "{}"
+        })
+        st.success("Memory Cleanup task issued!")
 
-    if st.button("Complete Optimization", type="primary"):
-        if restart:
-            payload = {"system_id": st.session_state.system_id, "action": "restart_system", "status": "pending"}
-            try:
-                requests.post(f"{API_BASE_URL}/tasks/create", json=payload)
-                st.success("Restart task queued — agent will confirm with user & reboot.")
-            except:
-                st.error("Failed to queue restart.")
-        else:
-            st.balloons()
-            st.success("Optimization flow complete! Monitor via /tasks/{system_id}")
-
-# Footer
-st.markdown("---")
-st.caption(f"Connected to FastAPI @ {API_BASE_URL} | Last refresh: {datetime.now().strftime('%H:%M:%S')}")
+# --- STEP 4: FINAL ACTION (Adding Restart Logic) ---
+elif st.session_state.step == 4:
+    # st.balloons()
+    st.header("Optimization Complete")
+    st.success("Your system has been optimized successfully.")
+    
+    # Matching the "Recommendation" box from the Lovable UI
+    st.info("💡 **Recommendation:** Your system performance has improved, but a restart is recommended to clear deep-level system cache.")
+    
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("Restart System Now"):
+            requests.post(f"{API_BASE}/tasks/create", params={
+                "system_id": st.session_state.selected_system, 
+                "action_type": "restart_system",
+                "payload": "{}"
+            })
+            st.warning("Restart command sent to workstation.")
+    with col_b:
+        if st.button("Finish & Exit"):
+            st.session_state.step = 1
+            st.rerun()
